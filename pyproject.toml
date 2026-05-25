@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dictextractor"
+version = "0.1.0"
+description = "Experimental pipeline for extracting structured entries from scanned dictionary pages using OCR and LLMs."
+requires-python = ">=3.10"
+
+dependencies = [
+    "litellm",
+    "python-docx",
+    "Pillow",
+    "pydantic",
+    "python-dotenv",
+    "pandas",
+    "opencv-python",
+    "matplotlib",
+    "scikit-learn",
+    "python-Levenshtein",
+    "grapheme",
+    "jiwer",
+    "sacrebleu",
+    "pymupdf>=1.27.2.2",
+    "scipy>=1.15.3",
+    "label-studio>=1.23.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+paddle = [
+    "paddlepaddle",
+    "paddleocr",
+]
+# VLM OCR deps (torch, transformers, mineru, paddle doc-parser) are installed manually
+# into per-model venvs — see examples/helper/install_models_venv.sh and models/requirements-models.txt.
+# Not listed here: MinerU and GLM-OCR need incompatible transformers versions.
+
+[project.scripts]
+dictextractor-extract   = "dictextractor.cli.extract:main"
+dictextractor-evaluate  = "dictextractor.cli.evaluate:main"
+dictextractor-preprocess = "dictextractor.cli.preprocess:main"
+dictextractor-run-ocr   = "dictextractor.cli.run_ocr:main"
+dictextractor-annotate  = "dictextractor.cli.annotate:main"
+dictextractor-eval-flat = "dictextractor.cli.evaluate_stage_flat:main"
+dictextractor-eval-stage2-mdf = "dictextractor.cli.evaluate_stage2_mdf:main"
+dictextractor-mathpix-convert = "dictextractor.cli.run_mathpix_convert:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dictextractor"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.uv]
+package = true
+
+[tool.uv.sources]
+# Uncomment to pin to a local editable install during development:
+# dictextractor = { path = ".", editable = true }
