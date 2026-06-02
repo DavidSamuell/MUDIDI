@@ -1,6 +1,6 @@
-# MUDIDI
+# MUDIDI: A pipeline for Digitization of Multilingual Dictionary
 
-Digitize scanned bilingual dictionary pages into structured lexicon records using LLMs.
+Digitize scanned multi-lingual dictionary pages into structured lexicon records using LLMs.
 
 MUDIDI runs a two-stage pipeline:
 
@@ -1039,13 +1039,13 @@ The sections below are for reproducing the MUDIDI benchmark on the 30-dictionary
 
 ### Benchmark vs inference
 
-|               | Inference (default)                 | Benchmark (`--benchmark`)              |
-| ------------- | ----------------------------------- | -------------------------------------- |
-| Purpose       | Digitize your dictionary            | Evaluate models against gold labels    |
-| Inputs        | `--pages`, `--output-dir`           | `--samples-dir` + samples tree layout  |
-| Stage 2 input | Stage 1 predictions                 | Gold transcripts (default)             |
-| Page context  | Previous/next **only among pages in this run** (see [Inference-specific behaviour](#inference-specific-behaviour)) | Independent pages (no neighbors) |
-| Output layout | `{output_dir}/stage-1/`, `stage-2/` | `{lang}/outputs/stage-1/{experiment}/` |
+|               | Inference (default)                                                                                                | Benchmark (`--benchmark`)              |
+| ------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
+| Purpose       | Digitize your dictionary                                                                                           | Evaluate models against gold labels    |
+| Inputs        | `--pages`, `--output-dir`                                                                                          | `--samples-dir` + samples tree layout  |
+| Stage 2 input | Stage 1 predictions                                                                                                | Gold transcripts (default)             |
+| Page context  | Previous/next **only among pages in this run** (see [Inference-specific behaviour](#inference-specific-behaviour)) | Independent pages (no neighbors)       |
+| Output layout | `{output_dir}/stage-1/`, `stage-2/`                                                                                | `{lang}/outputs/stage-1/{experiment}/` |
 
 ### Benchmark quick start
 
