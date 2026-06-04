@@ -17,8 +17,9 @@ Reasoning / thinking behaviour by model family:
   - OpenRouter provider routing: defaults to Parasail for Qwen-style models; OpenAI
                  models (``openai/gpt-*``) route via ``openai``; Anthropic Claude via
                  ``anthropic``. Override with ``OPENROUTER_PROVIDER_ORDER``.
-  - Gemini 3+ temperature: must be 1.0; litellm sets this automatically, but we honour
-                 the caller's temperature for non-Gemini-3 models.
+  - Gemini 3+ temperature: omitted from params (litellm locks to 1.0).
+  - GPT-5 family (incl. codex): only ``temperature=1`` is accepted; other values are
+                 clamped with a warning.
 
 OpenRouter env overrides:
   - ``OPENROUTER_PROVIDER_ORDER`` — comma-separated provider slugs (default: ``parasail``).
@@ -405,6 +406,34 @@ def _supports_reasoning_effort(model: str) -> bool:
     return "thinking" in model.lower()
 
 
+def _requires_temperature_one(model: str) -> bool:
+    """Return True when the provider only accepts ``temperature=1`` (GPT-5 family)."""
+    slug = _model_slug(model)
+    return "gpt-5" in slug
+
+
+def _effective_temperature(model: str, temperature: float) -> float:
+    """Resolve sampling temperature for ``model``, applying provider constraints."""
+    if _requires_temperature_one(model):
+        return 1.0
+    return temperature
+
+
+def _set_temperature_param(
+    params: Dict[str, Any], model: str, temperature: float
+) -> None:
+    """Attach ``temperature`` to completion params when the model supports it."""
+    if _is_gemini3(model):
+        return
+    effective = _effective_temperature(model, temperature)
+    if _requires_temperature_one(model) and abs(temperature - effective) > 1e-6:
+        print(
+            f"  [{_retry_label_for_model(model)}] temperature {temperature} → {effective} "
+            "(GPT-5 family only supports temperature=1)"
+        )
+    params["temperature"] = effective
+
+
 def _build_params(
     model: str,
     messages: List[Dict[str, Any]],
@@ -437,7 +466,7 @@ def _build_params(
         params["reasoning_effort"] = effort
         print(f"  [Gemini 3] reasoning_effort={effort} (temperature fixed at 1.0 by litellm)")
     elif _is_gemini25(model):
-        params["temperature"] = temperature
+        _set_temperature_param(params, model, temperature)
         if reasoning_effort in (None, "none", "low"):
             params["extra_body"] = {
                 "generationConfig": {"thinking": {"thinkingConfig": {"mode": "DISABLED"}}}
@@ -447,7 +476,7 @@ def _build_params(
             params["reasoning_effort"] = reasoning_effort
             print(f"  [Gemini 2.5] reasoning_effort={reasoning_effort}")
     else:
-        params["temperature"] = temperature
+        _set_temperature_param(params, model, temperature)
         if reasoning_effort and _openrouter_supports_reasoning_api(model):
             _apply_openrouter_reasoning(
                 params,
@@ -604,7 +633,9 @@ def complete_structured(
     last_finish_reason: Optional[str] = None
 
     for attempt in range(max_attempts):
-        attempt_temperature = min(temperature + 0.2 * attempt, 0.8)
+        attempt_temperature = _effective_temperature(
+            model, min(temperature + 0.2 * attempt, 0.8)
+        )
         if attempt > 0:
             params = _build_params(
                 model,

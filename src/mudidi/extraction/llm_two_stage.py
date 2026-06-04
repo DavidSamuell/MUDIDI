@@ -170,6 +170,7 @@ class TwoStageLLMExtraction(ExtractionStrategy):
         intro_image_paths: Optional[List[str]] = None,
         stage1_reasoning_effort: str = "low",
         stage2_reasoning_effort: str = "low",
+        temperature: float = 0.1,
         stage1_guides: str = "",
         stage2_guides: str = "",
         stage1_mode: str = "column",
@@ -193,6 +194,7 @@ class TwoStageLLMExtraction(ExtractionStrategy):
         self.intro_image_paths = intro_image_paths or []
         self.stage1_reasoning_effort = stage1_reasoning_effort
         self.stage2_reasoning_effort = stage2_reasoning_effort
+        self.temperature = temperature
         self.stage1_guides = stage1_guides
         self.stage2_guides = stage2_guides
         self.stage1_mode = stage1_mode
@@ -417,6 +419,7 @@ class TwoStageLLMExtraction(ExtractionStrategy):
                 model=self.transcribe_model,
                 messages=messages,
                 response_schema=FlatTranscriptionResponse,
+                temperature=self.temperature,
                 reasoning_effort=self.stage1_reasoning_effort,
             )
             flat_text = flat_transcription_to_text(
@@ -433,6 +436,7 @@ class TwoStageLLMExtraction(ExtractionStrategy):
             model=self.transcribe_model,
             messages=messages,
             response_schema=TranscriptionResponse,
+            temperature=self.temperature,
             reasoning_effort=self.stage1_reasoning_effort,
         )
         return _transcription_to_tsv(result), raw, usage, _sanitize_messages(messages)
@@ -493,6 +497,7 @@ class TwoStageLLMExtraction(ExtractionStrategy):
                     intro_images=intro_paths,
                     model=self.stage2_pass1_model,
                     reasoning_effort=self.stage2_reasoning_effort,
+                    temperature=self.temperature,
                     languages_config=self.dictionary_languages,
                     dictionary_name=dictionary_name,
                 )
@@ -505,6 +510,7 @@ class TwoStageLLMExtraction(ExtractionStrategy):
                     intro_images=intro_paths,
                     model=self.stage2_pass1_model,
                     reasoning_effort=self.stage2_reasoning_effort,
+                    temperature=self.temperature,
                     languages_config=self.dictionary_languages,
                     dictionary_name=dictionary_name,
                 )
@@ -543,6 +549,7 @@ class TwoStageLLMExtraction(ExtractionStrategy):
             field_map=field_map,
             model=self.stage2_pass2_model,
             reasoning_effort=self.stage2_reasoning_effort,
+            temperature=self.temperature,
             guides=self.stage2_guides,
             toolbox_pdf=self.stage2_toolbox_pdf,
             mode=self.prompt_mode,

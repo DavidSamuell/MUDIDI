@@ -69,6 +69,7 @@ def discover_field_cheatsheet(
     intro_images: List[Path],
     model: str,
     reasoning_effort: str = "high",
+    temperature: float = 0.1,
     languages_config: Optional[DictionaryLanguagesConfig] = None,
     dictionary_name: str = "",
 ) -> DictionaryMarkerCheatsheet:
@@ -101,7 +102,12 @@ def discover_field_cheatsheet(
         {"role": "user", "content": content},
     ]
     logger.info("Pass 1 field discovery: model=%s sample=%s", model, sample_image.name)
-    raw = complete(model=model, messages=messages, reasoning_effort=reasoning_effort)  # type: ignore[arg-type]
+    raw = complete(
+        model=model,
+        messages=messages,
+        temperature=temperature,
+        reasoning_effort=reasoning_effort,  # type: ignore[arg-type]
+    )
     data = _extract_json_object(raw)
     sheet = DictionaryMarkerCheatsheet.model_validate(data)
     if dictionary_name and not sheet.dictionary_name:
@@ -115,6 +121,7 @@ def discover_field_cheatsheet_multi(
     intro_images: List[Path],
     model: str,
     reasoning_effort: str = "high",
+    temperature: float = 0.1,
     languages_config: Optional[DictionaryLanguagesConfig] = None,
     dictionary_name: str = "",
 ) -> DictionaryMarkerCheatsheet:
@@ -162,7 +169,12 @@ def discover_field_cheatsheet_multi(
         model,
         sample_names,
     )
-    raw = complete(model=model, messages=messages, reasoning_effort=reasoning_effort)  # type: ignore[arg-type]
+    raw = complete(
+        model=model,
+        messages=messages,
+        temperature=temperature,
+        reasoning_effort=reasoning_effort,  # type: ignore[arg-type]
+    )
     data = _extract_json_object(raw)
     sheet = DictionaryMarkerCheatsheet.model_validate(data)
     if dictionary_name and not sheet.dictionary_name:
@@ -230,6 +242,7 @@ def load_or_discover_parse_rules(
             intro_images=discover_kwargs.get("intro_images", []),
             model=discover_kwargs["model"],
             reasoning_effort=discover_kwargs.get("reasoning_effort", "high"),
+            temperature=discover_kwargs.get("temperature", 0.1),
             languages_config=discover_kwargs.get("languages_config"),
             dictionary_name=discover_kwargs.get("dictionary_name", ""),
         )

@@ -179,6 +179,7 @@ def extract_direct_mdf(
     field_map: FieldMapPrompt,
     model: str,
     reasoning_effort: str,
+    temperature: float = 0.1,
     guides: str = "",
     toolbox_pdf: Optional[Path] = None,
     mode: PromptMode = "benchmark",
@@ -203,6 +204,7 @@ def extract_direct_mdf(
     raw, usage = llm.complete_with_usage(
         model=model,
         messages=messages,
+        temperature=temperature,
         reasoning_effort=reasoning_effort,  # type: ignore[arg-type]
     )
     mdf_text = normalize_mdf_text(strip_markdown_fences(raw))

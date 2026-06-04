@@ -5,7 +5,9 @@ from __future__ import annotations
 from mudidi.llm.client import (
     _build_params,
     _direct_supports_reasoning_effort,
+    _effective_temperature,
     _openrouter_supports_reasoning_api,
+    _requires_temperature_one,
 )
 
 
@@ -60,6 +62,35 @@ def test_build_params_openrouter_uses_extra_body_reasoning() -> None:
     )
     assert params["extra_body"]["reasoning"] == {"enabled": False}
     assert "reasoning_effort" not in params
+
+
+def test_gpt5_requires_temperature_one() -> None:
+    assert _requires_temperature_one("openai/gpt-5.5")
+    assert _requires_temperature_one("openrouter/openai/gpt-5.5")
+    assert not _requires_temperature_one("openai/gpt-4o")
+
+
+def test_build_params_gpt5_clamps_temperature() -> None:
+    params = _build_params(
+        "openai/gpt-5.5",
+        messages=[{"role": "user", "content": "hi"}],
+        temperature=0.1,
+        max_tokens=1024,
+        reasoning_effort="low",
+    )
+    assert params["temperature"] == 1.0
+    assert _effective_temperature("openai/gpt-5.5", 0.1) == 1.0
+
+
+def test_build_params_gpt4o_keeps_temperature() -> None:
+    params = _build_params(
+        "openai/gpt-4o",
+        messages=[{"role": "user", "content": "hi"}],
+        temperature=0.1,
+        max_tokens=1024,
+        reasoning_effort=None,
+    )
+    assert params["temperature"] == 0.1
 
 
 def test_build_params_gpt4o_ignores_reasoning_flag() -> None:

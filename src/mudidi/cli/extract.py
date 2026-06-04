@@ -437,6 +437,7 @@ def _build_stage1_manifest(
         "git_sha": _git_short_sha(),
         "model": args.stage_models.stage_1,
         "reasoning_effort": args.stage1_reasoning_effort,
+        "temperature": args.temperature,
         "render_pdfs": _needs_pdf_rasterization(args.stage_models.stage_1),
         "alphabet": _alphabet_manifest_entry(args.alphabet),
         "ocr_hint": {
@@ -475,6 +476,7 @@ def _build_stage2_manifest(
         "stage_2_pass_1_model": args.stage_models.stage_2_pass_1,
         "stage_2_pass_2_model": args.stage_models.stage_2_pass_2,
         "reasoning_effort": args.stage2_reasoning_effort,
+        "temperature": args.temperature,
         "stage2_output_format": "mdf",
         "prompts_file": str(
             getattr(args, "prompts_file", None) or default_prompts_path()
@@ -548,6 +550,7 @@ def _build_strategy(
             intro_image_paths=intro_image_paths,
             stage1_reasoning_effort=getattr(args, "stage1_reasoning_effort", "low"),
             stage2_reasoning_effort=getattr(args, "stage2_reasoning_effort", "low"),
+            temperature=getattr(args, "temperature", 0.1),
             stage1_guides=getattr(args, "stage1_guides_text", ""),
             stage2_guides=getattr(args, "stage2_guides_text", ""),
             stage1_mode=getattr(args, "stage1_mode", "column"),
@@ -901,6 +904,13 @@ Examples:
         "(default: low). High reasoning has been observed to leak chain-of-"
         "thought into output on dense pages — bump only when "
         "you've confirmed the leak doesn't happen for your model + pages.",
+    )
+    parser.add_argument(
+        "--temperature",
+        type=float,
+        default=0.1,
+        help="Sampling temperature for all LLM steps (default: 0.1). GPT-5 family "
+        "models only accept 1.0 — MUDIDI clamps automatically with a log line.",
     )
     parser.add_argument(
         "--stage-1-guides",
@@ -1658,7 +1668,8 @@ def _run_single_entry(args, parser) -> int:
     print(f"Output directory: {output_dir}")
     print(
         f"Strategy: {args.strategy} | Models: {args.stage_models.summary()} | "
-        f"Stage: {args.stage} | Overwrite: {args.overwrite}"
+        f"Stage: {args.stage} | Temperature: {args.temperature} | "
+        f"Overwrite: {args.overwrite}"
     )
     if args.strategy == "two_stage":
         if args.stage in ("1", "both"):
