@@ -12,6 +12,8 @@ Reasoning / thinking behaviour by model family:
   - OpenRouter reasoning models (GPT-5.x, Claude Opus 4.x, *-thinking VLMs):
                  ``extra_body.reasoning`` with ``enabled: false`` when effort is
                  ``none``, else ``effort`` + ``exclude: true`` for structured Stage 1.
+  - Direct OpenAI / Anthropic (``openai/gpt-5*``, ``anthropic/claude-opus*``, etc.):
+                 litellm ``reasoning_effort`` (same markers as OpenRouter slug detection).
   - OpenRouter provider routing: defaults to Parasail for Qwen-style models; OpenAI
                  models (``openai/gpt-*``) route via ``openai``; Anthropic Claude via
                  ``anthropic``. Override with ``OPENROUTER_PROVIDER_ORDER``.
@@ -126,6 +128,29 @@ def _is_openrouter(model: str) -> bool:
     return "openrouter" in model.lower()
 
 
+def _model_slug(model: str) -> str:
+    """Return the model id portion after an optional ``provider/`` prefix."""
+    return model.lower().split("/", maxsplit=1)[-1]
+
+
+_REASONING_SLUG_MARKERS = (
+    "gpt-5",
+    "o1",
+    "o3",
+    "o4",
+    "claude-opus",
+    "claude-4.",
+    "claude-4-",
+)
+
+
+def _slug_supports_reasoning_controls(slug: str) -> bool:
+    """Return True when a model slug denotes reasoning-effort controls."""
+    if "thinking" in slug:
+        return True
+    return any(tag in slug for tag in _REASONING_SLUG_MARKERS)
+
+
 def _openrouter_has_thinking_model(model: str) -> bool:
     """Return True when the OpenRouter model id denotes a reasoning/thinking variant."""
     return _is_openrouter(model) and "thinking" in model.lower()
@@ -137,17 +162,30 @@ def _openrouter_supports_reasoning_api(model: str) -> bool:
         return False
     if _openrouter_has_thinking_model(model):
         return True
-    slug = model.lower().split("/", maxsplit=1)[-1]
-    markers = (
-        "gpt-5",
-        "o1",
-        "o3",
-        "o4",
-        "claude-opus",
-        "claude-4.",
-        "claude-4-",
-    )
-    return any(tag in slug for tag in markers)
+    return _slug_supports_reasoning_controls(_model_slug(model))
+
+
+def _is_direct_openai(model: str) -> bool:
+    """Return True for direct OpenAI model strings (not OpenRouter or Gemini)."""
+    if _is_openrouter(model) or _is_gemini(model):
+        return False
+    m = model.lower()
+    return "openai" in m or "gpt" in m or m.startswith("gpt-")
+
+
+def _is_direct_anthropic(model: str) -> bool:
+    """Return True for direct Anthropic model strings (not OpenRouter)."""
+    if _is_openrouter(model) or _is_gemini(model):
+        return False
+    m = model.lower()
+    return "anthropic" in m or "claude" in m
+
+
+def _direct_supports_reasoning_effort(model: str) -> bool:
+    """Return True when a direct OpenAI/Anthropic call should receive ``reasoning_effort``."""
+    if _is_direct_openai(model) or _is_direct_anthropic(model):
+        return _slug_supports_reasoning_controls(_model_slug(model))
+    return False
 
 
 def _apply_openrouter_reasoning(
@@ -361,7 +399,7 @@ def _completion_with_retries(params: Dict[str, Any]):
 
 
 def _supports_reasoning_effort(model: str) -> bool:
-    """Return True when the model family understands litellm reasoning_effort."""
+    """Return True for Gemini or other models that accept litellm ``reasoning_effort``."""
     if _is_gemini3(model) or _is_gemini25(model):
         return True
     return "thinking" in model.lower()
@@ -416,6 +454,10 @@ def _build_params(
                 reasoning_effort,
                 exclude_in_response=True,
             )
+        elif reasoning_effort and _direct_supports_reasoning_effort(model):
+            params["reasoning_effort"] = reasoning_effort
+            label = "OpenAI" if _is_direct_openai(model) else "Anthropic"
+            print(f"  [{label}] reasoning_effort={reasoning_effort}")
         elif reasoning_effort and _supports_reasoning_effort(model):
             params["reasoning_effort"] = reasoning_effort
 

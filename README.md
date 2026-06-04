@@ -102,12 +102,14 @@ mudidi run --help
 
 ### API keys (`.env`)
 
-| Key                   | Used for                                            |
-| --------------------- | --------------------------------------------------- |
-| `GEMINI_API_KEY`      | Gemini models (`gemini/...`)                        |
-| `OPEN_ROUTER_API_KEY` | GPT, Claude, Qwen via OpenRouter (`openrouter/...`) |
+Copy [`.env.example`](.env.example) to `.env` and set only the keys for backends you use. MUDIDI uses **litellm ≥ 1.87** (GPT‑5.5 `reasoning_effort`, OpenAI SDK 2.x) and passes the matching key based on the model string (see [Model strings](#model-strings-model)). Label Studio is optional and uses a [separate venv](docs/uv.md) because it pins `openai` 1.x.
 
-Models are routed through [litellm](https://github.com/BerriAI/litellm). The model string selects the provider (e.g. `gemini/gemini-3-flash-preview`, `openrouter/openai/gpt-5.5`).
+| Key                   | Used for                                                         |
+| --------------------- | ---------------------------------------------------------------- |
+| `GEMINI_API_KEY`      | Gemini (`gemini/...` or `google/...`)                            |
+| `OPEN_ROUTER_API_KEY` | Models prefixed with `openrouter/` (GPT, Claude, Qwen, …)        |
+| `OPENAI_API_KEY`      | Direct OpenAI (`openai/...` or ids containing `gpt` / `openai`)  |
+| `ANTHROPIC_API_KEY`   | Direct Anthropic (`anthropic/...` or ids containing `claude`)    |
 
 ---
 
@@ -518,6 +520,40 @@ uv run mudidi run \
 ### Model selection
 
 Use **`--model`** to set the same litellm model string for every step (Stage 1, Stage 2 Pass 1 parse-rules discovery, Stage 2 Pass 2 MDF extraction). Override individual steps when you want different models or reasoning budgets.
+
+#### Model strings (`--model`)
+
+Every model flag (`--model`, `--stage-1-model`, `--stage-2-pass-1-model`, `--stage-2-pass-2-model`) accepts a **[litellm](https://docs.litellm.ai/docs/providers) model id**. MUDIDI calls `litellm.completion` with that string unchanged; the **prefix** (or recognizable substrings in the id) selects the provider and which API key from `.env` is injected.
+
+| Route | Example `--model` values | API key |
+| ----- | ------------------------ | ------- |
+| **Gemini (direct)** | `gemini/gemini-3-flash-preview`, `gemini/gemini-3.1-pro-preview` | `GEMINI_API_KEY` |
+| **OpenRouter** | `openrouter/openai/gpt-5.5`, `openrouter/anthropic/claude-opus-4.7`, `openrouter/qwen/qwen3-vl-235b-a22b-instruct` | `OPEN_ROUTER_API_KEY` |
+| **OpenAI (direct)** | `openai/gpt-4o`, `gpt-4o` (use the [current API model id](https://platform.openai.com/docs/models) from OpenAI) | `OPENAI_API_KEY` |
+| **Anthropic (direct)** | `anthropic/claude-sonnet-4-20250514`, `claude-3-5-sonnet-20241022` (use the [current API model id](https://docs.anthropic.com/en/docs/about-claude/models) from Anthropic) | `ANTHROPIC_API_KEY` |
+
+**OpenRouter vs direct:** Prefix the model with `openrouter/` when you want a single OpenRouter key and MUDIDI’s OpenRouter routing (provider order, retries, optional `OPENROUTER_MAX_TOKENS`, reasoning via `extra_body`). Omit `openrouter/` and use `openai/...` or `anthropic/...` (or bare API ids) when you call OpenAI or Anthropic with your own account keys.
+
+**Vision:** Stage 1 and Stage 2 send page images (and sometimes PDFs). Use vision-capable models (Gemini flash/pro, GPT-4o-class, Claude Sonnet/Opus, Qwen-VL, etc.).
+
+**PDF input:** When `--pages` is a PDF, Gemini can receive inline PDF data; other families have pages rasterized to PNG before the LLM call.
+
+**Reasoning flags** (`--stage1-reasoning`, `--stage2-reasoning`): behaviour is provider-specific. Gemini 3+ maps effort via litellm `reasoning_effort` (`none` → `low`; thinking cannot be fully disabled). OpenRouter GPT‑5 / Claude Opus / `*-thinking` models use OpenRouter’s `reasoning` object (`none` → `enabled: false` on Stage 1). **Direct** `openai/gpt-5*`, `o1`/`o3`/`o4`, and `anthropic/claude-opus*` / `claude-4*` ids receive the same effort values via litellm `reasoning_effort` (including Stage 1 `none` where the API supports it). Older direct models (e.g. `gpt-4o`) ignore these flags.
+
+```bash
+# Gemini (default path in this repo)
+--model gemini/gemini-3-flash-preview
+
+# OpenRouter — one key, many hosts
+--model openrouter/openai/gpt-5.5
+--stage-2-pass-2-model openrouter/anthropic/claude-opus-4.7
+
+# Direct OpenAI / Anthropic — no openrouter/ prefix
+--model openai/gpt-4o
+--model anthropic/claude-sonnet-4-20250514
+```
+
+For any litellm-supported provider, use that provider’s documented id format. Benchmark scripts under [`examples/stage-1/`](examples/stage-1/) and [`examples/stage-2/`](examples/stage-2/) show full OpenRouter invocations.
 
 **Typical inference setup:** Gemini 3 Flash for Stage 1 transcription, Gemini 3.1 Pro for both Stage 2 passes, with `--stage2-reasoning medium`:
 

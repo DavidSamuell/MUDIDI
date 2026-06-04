@@ -9,7 +9,7 @@ description = "Dictionary OCR and MDF extraction pipeline with benchmark and inf
 requires-python = ">=3.10"
 
 dependencies = [
-    "litellm",
+    "litellm>=1.87.0",
     "python-docx",
     "Pillow",
     "pydantic",
@@ -22,11 +22,13 @@ dependencies = [
     "sacrebleu",
     "pymupdf>=1.27.2.2",
     "scipy>=1.15.3",
-    "label-studio>=1.23.0",
     "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
 paddle = [
     "paddlepaddle",
     "paddleocr",
@@ -46,6 +48,9 @@ packages = ["src/mudidi"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+markers = [
+    "integration: live LLM API calls (set MUDIDI_LLM_INTEGRATION=1)",
+]
 
 [tool.uv]
 package = true

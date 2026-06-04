@@ -1,4 +1,4 @@
-litellm
+litellm>=1.87.0
 python-docx
 Pillow
 pydantic
