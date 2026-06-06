@@ -29,6 +29,7 @@ OpenRouter env overrides:
   - ``OPENROUTER_MAX_RETRIES`` — retry attempts for 429/502/503 (default: ``8``).
   - ``GEMINI_MAX_RETRIES`` — retry attempts for direct Gemini 429/500/502/503 (default: ``8``).
   - ``STRUCTURED_MAX_RETRIES`` — retry attempts for truncated/invalid structured JSON (default: ``3``).
+  - ``LITELLM_DEBUG`` — set to ``1``/``true`` to enable verbose litellm request/response logging.
 """
 
 import json
@@ -43,6 +44,16 @@ from litellm.exceptions import APIError, RateLimitError
 from pydantic import BaseModel, ValidationError
 
 load_dotenv()
+
+
+def _configure_litellm_debug() -> None:
+    """Enable verbose litellm logging when ``LITELLM_DEBUG`` is set."""
+    if os.getenv("LITELLM_DEBUG", "").lower() in {"1", "true", "yes"}:
+        litellm._turn_on_debug()
+        print("  [litellm] debug logging enabled (LITELLM_DEBUG=1)")
+
+
+_configure_litellm_debug()
 
 ReasoningEffort = Literal["none", "low", "medium", "high"]
 T = TypeVar("T", bound=BaseModel)
