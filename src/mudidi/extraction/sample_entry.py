@@ -26,10 +26,11 @@ def stage1_context_inputs_apply(args: Any) -> bool:
 
 
 def configure_sample_entry_args(args: Any, entry_dir: Path) -> tuple[Path, Path]:
-    """Discover ``snippets/``, ``alphabet.txt``, ``mathpix/``, etc. for one entry.
+    """Discover ``snippets/``, ``alphabet.txt``, etc. for one entry.
 
     Mutates ``args`` in place (same fields as ``--samples-dir`` batch mode for
-    ``two_stage``). Respects ``--no-alphabet`` and ``--no-ocr-hint``.
+    ``two_stage``). Respects ``--no-alphabet``. OCR hints apply only when
+    ``args.ocr_text`` is set explicitly (``--ocr-text PATH``).
 
     Args:
         args: Parsed CLI namespace.
@@ -40,16 +41,10 @@ def configure_sample_entry_args(args: Any, entry_dir: Path) -> tuple[Path, Path]
     """
     snippets_dir = entry_dir / "snippets"
     intro_dir = entry_dir / "introduction"
-    mathpix_dir = entry_dir / "mathpix"
     alphabet_file = entry_dir / "alphabet.txt"
     output_dir = entry_dir / "outputs"
 
     args.input_image = str(snippets_dir)
-    args.ocr_text = (
-        str(mathpix_dir)
-        if mathpix_dir.is_dir() and not getattr(args, "no_ocr_hint", False)
-        else None
-    )
     args.intro = (
         str(intro_dir)
         if intro_dir.is_dir() and not getattr(args, "no_intro", False)
@@ -123,18 +118,13 @@ def validate_configured_sample_entry(
             )
         else:
             errors.extend(validate_alphabet_file(Path(args.alphabet)))
-    if not getattr(args, "no_ocr_hint", False):
-        if not args.ocr_text:
-            errors.append(
-                f"OCR hint required but missing: {entry_dir / 'mathpix'}/"
+    if args.ocr_text:
+        errors.extend(
+            validate_ocr_hints_for_snippets(
+                Path(args.ocr_text),
+                snippets_dir,
             )
-        else:
-            errors.extend(
-                validate_ocr_hints_for_snippets(
-                    Path(args.ocr_text),
-                    snippets_dir,
-                )
-            )
+        )
     return errors
 
 

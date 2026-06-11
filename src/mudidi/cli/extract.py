@@ -689,7 +689,7 @@ Examples:
         dest="ocr_text",
         help="Directory of OCR hint files (.docx/.txt/.md). "
         "Each file must share the same stem as its matching image "
-        "(e.g. page_1.png → page_1.docx). Optional.",
+        "(e.g. page_1.png → page_1.docx). Off by default; pass this path to enable.",
     )
 
     # Batch mode — process every language subfolder under a samples root
@@ -699,7 +699,7 @@ Examples:
         help="Parent directory containing one subfolder per dictionary "
         "(e.g. assets/dictionaries/samples-2). When set, every "
         "subfolder is processed using its default layout "
-        "(snippets/, introduction/, mathpix/, alphabet.txt) and "
+        "(snippets/, introduction/, alphabet.txt) and "
         "outputs are written to {entry}/outputs/stage-1.",
     )
     parser.add_argument(
@@ -970,9 +970,8 @@ Examples:
         "--no-ocr-hint",
         action="store_true",
         dest="no_ocr_hint",
-        help="Suppress OCR hint input for Stage 1. In --samples-dir mode this "
-        "skips auto-discovery of <lang>/mathpix/; in single-entry mode it "
-        "ignores --ocr-text. Use for OCR-hint ablation experiments.",
+        help="Suppress OCR hint input for Stage 1 (clears an explicit "
+        "--ocr-text). Rarely needed now that OCR hints are off by default.",
     )
     parser.add_argument(
         "--no-intro",

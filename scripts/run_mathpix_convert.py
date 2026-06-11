@@ -3,7 +3,7 @@
 For each ``{source}-{target...}`` entry folder under the samples root, writes
 ``.md`` and ``.lines.json`` files under ``mathpix/``. Use those artifacts as
 Stage 1 OCR hints with ``mudidi-extract --strategy two_stage`` and
-``--ocr-text <entry>/mathpix`` (auto-wired in ``--samples-dir`` mode).
+``--ocr-text <entry>/mathpix`` when you pass ``--ocr-text PATH`` explicitly.
 
 Usage:
     uv run python scripts/run_mathpix_convert.py \\

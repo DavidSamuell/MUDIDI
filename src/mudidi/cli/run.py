@@ -79,7 +79,7 @@ def register_run_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--ocr-text",
         dest="ocr_text",
-        help="Directory of OCR hint files keyed by page stem.",
+        help="Directory of OCR hint files keyed by page stem (off by default).",
     )
     parser.add_argument(
         "--stage",
