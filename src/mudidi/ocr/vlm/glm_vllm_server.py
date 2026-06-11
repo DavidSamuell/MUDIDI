@@ -47,7 +47,7 @@ def glm_vllm_server_python(explicit: str | None = None) -> Path:
 
     raise FileNotFoundError(
         f"Missing {DEFAULT_SERVER_VENV}. Install with:\n"
-        f"  bash examples/helper/install_models_venv.sh glmocr-vllm"
+        f"  bash examples-dev/helper/install_models_venv.sh glmocr-vllm"
     )
 
 
