@@ -509,7 +509,7 @@ uv run mudidi run \
 | `--intro PATH`                       | —                       | Introduction directory or text/image file (snippets-directory mode only)                                                                                                                  |
 | `--intro-pages SPEC`                 | —                       | When `--pages` is a PDF: intro pages from the **same PDF** (same syntax as `--dict-pages`)                                                                                                |
 | `--alphabet PATH`                    | —                       | Alphabet file (`.txt`/`.md`) or image                                                                                                                                                     |
-| `--ocr-text PATH`                    | —                       | Optional OCR hint directory (`.md`/`.docx`/`.txt` per page). Benchmark ablation showed limited benefit — omit unless experimenting                                                        |
+| `--ocr-text PATH`                    | — (off)                 | Enable OCR hints from a per-page hint directory (`.md`/`.docx`/`.txt`, one file per snippet stem). Off by default; benchmark ablations showed limited benefit |
 | `--prompts-file PATH`                | bundled `PROMPT.json`   | Custom prompts; edits reload on next LLM call                                                                                                                                             |
 | `--parse-rules-page STEM`            | first page in `--pages` | Pass 1 sample page stem(s). Must exist under `--pages` (snippets dir or PDF split). Repeat the flag or comma-separate (`page_50,page_200`). **Two or more** → multi-sample Pass 1 prompt. |
 | `--parse-rules-file PATH`            | —                       | Load curated `parse-rules.json`; skip Pass 1 LLM discovery. **Always** reads your file (overrides any existing `{output_dir}/parse-rules.json`) and refreshes the output copy.            |
@@ -553,7 +553,7 @@ Every model flag (`--model`, `--stage-1-model`, `--stage-2-pass-1-model`, `--sta
 --model anthropic/claude-sonnet-4-20250514
 ```
 
-For any litellm-supported provider, use that provider’s documented id format. Benchmark scripts under [`examples/stage-1/`](examples/stage-1/) and [`examples/stage-2/`](examples/stage-2/) show full OpenRouter invocations.
+For any litellm-supported provider, use that provider’s documented id format. See [`examples/`](examples/) for runnable inference and evaluation scripts.
 
 **Typical inference setup:** Gemini 3 Flash for Stage 1 transcription, Gemini 3.1 Pro for both Stage 2 passes, with `--stage2-reasoning medium`:
 
@@ -613,7 +613,6 @@ uv run mudidi run \
 | `--overwrite`                               | off         | Re-process pages even if output exists; also **re-runs Pass 1 LLM discovery** when `{output_dir}/parse-rules.json` already exists                                                                                                                                                                 |
 | `--limit N`                                 | —           | Process at most N pages                                                                                                                                                                                                                                                                           |
 | `--no-alphabet`                             | off         | Skip alphabet hint                                                                                                                                                                                                                                                                                |
-| `--no-ocr-hint`                             | off         | Skip OCR hint                                                                                                                                                                                                                                                                                     |
 | `--no-intro`                                | off         | Skip introduction for Stage 2 Pass 1 (field discovery)                                                                                                                                                                                                                                            |
 
 ### Stage 1 output formats: flat vs column
@@ -1066,13 +1065,13 @@ The store reloads when the file modification time changes (next LLM call). If yo
 - Use **`uv sync`** and **`uv run`** (or activate `.venv` first). This ensures dependencies and console scripts resolve correctly.
 - LLM calls go through litellm; provider keys are inferred from the model string.
 - **`pdftk`** is required when `--pages` is a PDF file (page splitting). Snippets-directory workflows do not need it.
-- Specialised VLM backends (`--strategy vlm_ocr`) require separate model venvs — see [`examples/helper/install_models_venv.sh`](examples/helper/install_models_venv.sh). Most new-dictionary workflows use `--strategy two_stage` with a general LLM.
+- Specialised VLM backends (`--strategy vlm_ocr`) require separate model venvs — see [`docs/uv.md`](docs/uv.md#specialised-vlm-venvs). Most new-dictionary workflows use `--strategy two_stage` with a general LLM.
 
 ---
 
-## Benchmark mode (paper / evaluation)
+## Benchmark mode (evaluation)
 
-The sections below are for reproducing the MUDIDI benchmark on the 30-dictionary evaluation set — not needed for digitizing a new dictionary.
+The sections below describe how to run models against the MUDIDI **gold benchmark** — not needed for digitizing a new dictionary. Runnable walkthroughs: [`examples/README.md`](examples/README.md).
 
 ### Benchmark vs inference
 
@@ -1084,57 +1083,42 @@ The sections below are for reproducing the MUDIDI benchmark on the 30-dictionary
 | Page context  | Previous/next **only among pages in this run** (see [Inference-specific behaviour](#inference-specific-behaviour)) | Independent pages (no neighbors)       |
 | Output layout | `{output_dir}/stage-1/`, `stage-2/`                                                                                | `{lang}/outputs/stage-1/{experiment}/` |
 
-### Benchmark quick start
+### Examples (HF dataset layout)
+
+Download the gated dataset to `dataset/mudidi/`, then:
 
 ```bash
-uv run mudidi run --benchmark \
-  --samples-dir assets/dictionaries/samples \
-  --languages Evenki-Russian \
-  --experiment-name gemini31pro_flat_alpha \
-  --stage 1 \
-  --strategy two_stage \
-  --stage1-mode flat \
-  --model gemini/gemini-3-flash-preview
+bash examples/inference/run_directory_mode.sh
+bash examples/evaluation/run_stage1_eval.sh
+bash examples/evaluation/run_stage2_eval.sh
 ```
 
-Paper sweeps:
+See [`examples/README.md`](examples/README.md) for PDF mode, environment overrides, and model flags.
 
-```bash
-bash examples/stage-1/run_stage1_extraction.sh
-bash examples/stage-2/run_stage2_extraction.sh
-bash examples/evaluation/run_stage1_eval_flat.sh
-bash examples/evaluation/run_stage2_eval_mdf.sh
-```
-
-### Benchmark sample layout
+### Dataset layout (Hugging Face release)
 
 ```
-assets/dictionaries/samples/<Source-Target>/
-    snippets/
-    introduction/
-    alphabet.txt
+dataset/mudidi/dictionaries/<Source-Target>/
+    Dictionary pages/          # snippet images or PDFs
+    Introduction/              # optional preface pages
+    Alphabet list/alphabet.txt
     dictionary_languages.yaml
-    outputs/                     # populated by the pipeline
-        stage-1-gold/            # human gold (evaluation only)
-        stage-2-gold/            # gold parse-rules.json (legacy name: field_cheatsheet.json)
-        stage-1/<experiment>/
-        stage-2/<experiment>/      # includes parse-rules.json per experiment
+    Stage 1 Gold OCR/          # human gold (evaluation)
+    Stage 2 MDF file/          # MDF gold (10 dictionaries)
+    Stage 2 Gold Cheat Sheet/  # parse-rules gold (10 dictionaries)
 ```
+
+Manifests: `dataset/mudidi/manifest/pages.jsonl`, `dictionaries.jsonl`.
+
+The legacy internal layout (`assets/dictionaries/samples/` with `snippets/` and `outputs/stage-1-gold/`) is used for paper-scale sweeps and is not required for the public examples.
 
 ### Dataset
 
-The benchmark covers **30 public-domain bilingual dictionaries**. Gold data and manifests: [`dataset/mudidi/`](dataset/mudidi/). See [`dataset/mudidi/README.md`](dataset/mudidi/README.md).
+The benchmark covers **30 public-domain bilingual dictionaries**. Gold data and manifests: [`dataset/mudidi/`](dataset/mudidi/) (also on [Hugging Face](https://huggingface.co/datasets/DavidSamuell/mudidi) as a gated dataset — request access before download). See [`dataset/mudidi/README.md`](dataset/mudidi/README.md).
 
-### Reproducing paper tables
+### Paper results
 
-| Paper artifact                      | Command                                                                                     |
-| ----------------------------------- | ------------------------------------------------------------------------------------------- |
-| Table 2 — Stage 1 alphabet ablation | `examples/stage-1/run_stage1_extraction.sh` + `examples/evaluation/run_stage1_eval_flat.sh` |
-| Table 3 — Stage 1 OCR-hint ablation | `examples/stage-1/run_stage1_per_lang_best_flat_alpha_ocr.sh` + eval script                 |
-| Table 4 — Stage 2 MDF aggregate     | `examples/stage-2/run_stage2_extraction.sh` + `examples/evaluation/run_stage2_eval_mdf.sh`  |
-| Table 5 — Stage 2 gold cheat-sheet  | `examples/stage-2/run_stage2_gold_cheatsheet.sh` + eval script                              |
-
-Frozen evaluation outputs: [`evaluations/`](evaluations/).
+Submission-time benchmark numbers are frozen in [`evaluations/`](evaluations/). Multi-model ablation sweeps from the paper are not maintained in public `examples/`.
 
 ---
 
@@ -1154,10 +1138,15 @@ Frozen evaluation outputs: [`evaluations/`](evaluations/).
 ## Citation
 
 ```bibtex
-@inproceedings{mudidi2026,
-  title  = {MUDIDI: A Two-Stage Framework for Multilingual Dictionary Digitization with Language Models},
-  author = {Anonymous},
-  year   = {2026},
-  note   = {Under review}
+@misc{mudidi2026,
+  title         = {{MUDIDI: A Two-Stage Framework for Multilingual Dictionary Digitization with Language Models}},
+  author        = {Setiawan, David and Khishigsuren, Temuulen and Agarwal, Milind and Pit, Pagnarith and Mahmudi, Aso and Vylomova, Ekaterina},
+  year          = {2026},
+  eprint        = {2606.09435},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL},
+  doi           = {10.48550/arXiv.2606.09435},
+  url           = {https://arxiv.org/abs/2606.09435},
+  note          = {Submitted to EMNLP 2026}
 }
 ```
