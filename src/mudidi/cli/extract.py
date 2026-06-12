@@ -108,7 +108,11 @@ _TEXT_EXTS = {".txt", ".md", ".docx"}
 # Helpers
 # ---------------------------------------------------------------------------
 
-from mudidi.utils.pdf_render import needs_pdf_rasterization, render_pdf_pages
+from mudidi.utils.pdf_render import (
+    needs_pdf_rasterization,
+    render_pdf_pages,
+    run_needs_pdf_rasterization,
+)
 
 
 def _needs_pdf_rasterization(model: str) -> bool:
@@ -1508,8 +1512,12 @@ def _run_single_entry(args, parser) -> int:
     snippets_cache_dir = output_dir / ".rendered_snippets"
     intro_cache_dir = output_dir / ".rendered_intro"
 
-    # ── Collect snippet pages (render PDFs when the model needs PNG) ───────────
-    render_pdfs = _needs_pdf_rasterization(args.model)
+    # ── Collect snippet pages (render PDFs when any step needs PNG) ───────────
+    render_pdfs = run_needs_pdf_rasterization(
+        args.stage_models.stage_1,
+        args.stage_models.stage_2_pass_1,
+        args.stage_models.stage_2_pass_2,
+    )
     try:
         images = _materialize_snippet_inputs(
             input_path,

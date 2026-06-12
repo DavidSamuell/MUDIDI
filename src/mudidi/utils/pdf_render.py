@@ -24,6 +24,11 @@ def needs_pdf_rasterization(model: str) -> bool:
     return True
 
 
+def run_needs_pdf_rasterization(*models: str) -> bool:
+    """Return True when any pipeline step requires raster PNG inputs."""
+    return any(needs_pdf_rasterization(model) for model in models if model)
+
+
 def render_pdf_pages(
     pdf_path: Path,
     cache_dir: Path,
