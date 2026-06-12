@@ -108,16 +108,7 @@ _TEXT_EXTS = {".txt", ".md", ".docx"}
 # Helpers
 # ---------------------------------------------------------------------------
 
-from mudidi.utils.pdf_render import (
-    needs_pdf_rasterization,
-    render_pdf_pages,
-    run_needs_pdf_rasterization,
-)
-
-
-def _needs_pdf_rasterization(model: str) -> bool:
-    """Return True when PDF inputs must be rendered to PNG before LLM calls."""
-    return needs_pdf_rasterization(model)
+from mudidi.utils.pdf_render import render_pdf_pages, run_needs_pdf_rasterization
 
 
 def _render_pdf_pages(pdf_path: Path, cache_dir: Path, dpi: int = 200) -> List[Path]:
@@ -442,7 +433,11 @@ def _build_stage1_manifest(
         "model": args.stage_models.stage_1,
         "reasoning_effort": args.stage1_reasoning_effort,
         "temperature": args.temperature,
-        "render_pdfs": _needs_pdf_rasterization(args.stage_models.stage_1),
+        "render_pdfs": run_needs_pdf_rasterization(
+            args.stage_models.stage_1,
+            args.stage_models.stage_2_pass_1,
+            args.stage_models.stage_2_pass_2,
+        ),
         "alphabet": _alphabet_manifest_entry(args.alphabet),
         "ocr_hint": {
             "used": bool(ocr_dir),

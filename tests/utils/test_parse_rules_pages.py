@@ -51,7 +51,7 @@ def test_select_parse_rules_sample_images_defaults_to_first(tmp_path: Path) -> N
 def test_select_parse_rules_sample_images_missing_stem(tmp_path: Path) -> None:
     image = tmp_path / "page_1.png"
     image.write_bytes(b"x")
-    with pytest.raises(ValueError, match="not found"):
+    with pytest.raises(ValueError, match=r"not found.*['99']"):
         select_parse_rules_sample_images([image], ["page_99"])
 
 

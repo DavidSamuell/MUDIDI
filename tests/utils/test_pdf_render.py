@@ -20,7 +20,7 @@ def test_needs_pdf_rasterization(model: str, expected: bool) -> None:
     assert needs_pdf_rasterization(model) is expected
 
 
-def test_run_needs_pdf_rasterization_when_default_gemini_only() -> None:
+def test_run_needs_pdf_rasterization_all_gemini() -> None:
     assert (
         run_needs_pdf_rasterization(
             "gemini/gemini-3-flash-preview",
@@ -31,7 +31,7 @@ def test_run_needs_pdf_rasterization_when_default_gemini_only() -> None:
     )
 
 
-def test_run_needs_pdf_rasterization_when_stage_override_uses_openrouter() -> None:
+def test_run_needs_pdf_rasterization_all_openrouter() -> None:
     assert (
         run_needs_pdf_rasterization(
             "openrouter/qwen/qwen3-vl-235b-a22b-instruct",
@@ -42,16 +42,8 @@ def test_run_needs_pdf_rasterization_when_stage_override_uses_openrouter() -> No
     )
 
 
-def test_run_needs_pdf_rasterization_uses_stage_models_not_default_model() -> None:
-    """Stage-specific overrides must trigger rasterization even if --model is Gemini."""
-    assert (
-        run_needs_pdf_rasterization(
-            "openrouter/qwen/qwen3-vl-235b-a22b-instruct",
-            "openrouter/qwen/qwen3-vl-235b-a22b-instruct",
-            "openrouter/qwen/qwen3-vl-235b-a22b-instruct",
-        )
-        is True
-    )
+def test_run_needs_pdf_rasterization_mixed_models() -> None:
+    """One non-Gemini stage is enough to require rasterization."""
     assert (
         run_needs_pdf_rasterization(
             "gemini/gemini-3-flash-preview",
@@ -60,3 +52,10 @@ def test_run_needs_pdf_rasterization_uses_stage_models_not_default_model() -> No
         )
         is True
     )
+
+
+def test_run_needs_pdf_rasterization_skips_empty_model() -> None:
+    openrouter = "openrouter/qwen/qwen3-vl-235b-a22b-instruct"
+    gemini = "gemini/gemini-3-flash-preview"
+    assert run_needs_pdf_rasterization("", openrouter, gemini) is True
+    assert run_needs_pdf_rasterization("", gemini, gemini) is False

@@ -12,6 +12,14 @@ from mudidi.utils.pdf_split import parse_page_spec
 _PAGE_STEM_RE = re.compile(r"^page_(\d+)$", re.IGNORECASE)
 
 
+def _stem_to_page_label(stem: str) -> str:
+    """Map ``page_{N}`` stems to 1-based page numbers for CLI error messages."""
+    match = _PAGE_STEM_RE.match(stem)
+    if match:
+        return match.group(1)
+    return stem
+
+
 @dataclass(frozen=True)
 class ParseRulesSample:
     """One page used for Pass 1 parse-rules discovery."""
@@ -72,10 +80,11 @@ def select_parse_rules_sample_images(
 
     missing = [stem for stem in stems if stem not in by_stem]
     if missing:
-        available = sorted(by_stem)
+        missing_labels = [_stem_to_page_label(stem) for stem in missing]
+        available_labels = [_stem_to_page_label(stem) for stem in sorted(by_stem)]
         raise ValueError(
-            f"--parse-rules-page page(s) not found in --pages input: {missing}. "
-            f"Available pages: {available}"
+            f"--parse-rules-page page(s) not found in --pages input: {missing_labels}. "
+            f"Available pages: {available_labels}"
         )
     return [by_stem[stem] for stem in stems]
 
