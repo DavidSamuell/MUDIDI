@@ -11,7 +11,7 @@ uv run mudidi run \
   --pages inputs/Carolinian-English-Dictionary.pdf \
   --dict-pages 50-52 \
   --intro-pages 1-3 \
-  --parse-rules-page page_50 \
+  --parse-rules-page 50 \
   --output-dir outputs/carolinian-english \
   --stage all \
   --strategy two_stage \

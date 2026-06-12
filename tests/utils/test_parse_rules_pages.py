@@ -17,9 +17,15 @@ from mudidi.utils.parse_rules_pages import (
     ("values", "expected"),
     [
         (None, []),
+        ("1", ["page_1"]),
+        ("1-4", ["page_1", "page_2", "page_3", "page_4"]),
+        ("1,3,5", ["page_1", "page_3", "page_5"]),
+        (["1", "10"], ["page_1", "page_10"]),
+        (["1-2,5", "7"], ["page_1", "page_2", "page_5", "page_7"]),
         ("page_1", ["page_1"]),
         (["page_1", "page_2"], ["page_1", "page_2"]),
         (["page_1,page_2", "page_3"], ["page_1", "page_2", "page_3"]),
+        (["50,200"], ["page_50", "page_200"]),
     ],
 )
 def test_normalize_parse_rules_page_stems(
@@ -27,6 +33,11 @@ def test_normalize_parse_rules_page_stems(
     expected: list[str],
 ) -> None:
     assert normalize_parse_rules_page_stems(values) == expected
+
+
+def test_normalize_parse_rules_page_stems_invalid_spec() -> None:
+    with pytest.raises(ValueError, match="Unrecognised page"):
+        normalize_parse_rules_page_stems(["not-a-page"])
 
 
 def test_select_parse_rules_sample_images_defaults_to_first(tmp_path: Path) -> None:

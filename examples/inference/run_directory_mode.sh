@@ -8,7 +8,7 @@ uv run mudidi run \
   --pages "dataset/mudidi/dictionaries/Evenki-Russian/Dictionary pages" \
   --alphabet "dataset/mudidi/dictionaries/Evenki-Russian/Alphabet list/alphabet.txt" \
   --dictionary-languages "dataset/mudidi/dictionaries/Evenki-Russian/dictionary_languages.yaml" \
-  --parse-rules-page page_1 \
+  --parse-rules-page 1 \
   --output-dir outputs/evenki-russian \
   --stage all \
   --strategy two_stage \

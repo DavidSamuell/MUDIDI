@@ -1059,9 +1059,10 @@ Examples:
         "--parse-rules-page",
         action="append",
         dest="parse_rules_pages",
-        help="Page stem(s) for Stage 2 Pass 1 parse-rules discovery. Repeat the flag "
-        "or use commas (e.g. page_50,page_200). Default: first page in --pages. "
-        "Two or more stems use the multi-sample Pass 1 prompt.",
+        help="1-based page number(s) for Stage 2 Pass 1 parse-rules discovery "
+        "(same syntax as --dict-pages: e.g. '1', '1-4', '50,200'). Repeat the flag "
+        "or comma-separate. Default: first page in --pages. Two or more pages use "
+        "the multi-sample Pass 1 prompt.",
     )
     parser.add_argument(
         "--cheatsheet-page",
